@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Person CRUD UI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+   
+    <div class="container mt-5">
+        <h2 class="text-center">Person Management System</h2>
+        
+        <!-- Form to Add Person -->
+        <div class="mb-3">
+            <input type="text" id="name" class="form-control" placeholder="Name">
+            <select id="gender" class="form-control mt-2">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+            <input type="text" id="location" class="form-control mt-2" placeholder="Location">
+            <button class="btn btn-primary mt-2" onclick="addPerson()">Add Person</button>
+        </div>
+        
+        <!-- Table to Display Persons -->
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Gender</th>
+                    <th>Location</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="personTable"></tbody>
+        </table>
+    </div>
+    
+    <script>
+        const apiUrl = 'http://localhost:5000/person';
+        
+        function fetchPersons() {
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    let tableContent = '';
+                    data.forEach(person => {
+                        tableContent += `<tr id="person-${person._id}">
+                            <td>${person._id}</td>
+                            <td class="name">${person.name}</td>
+                            <td class="gender">${person.gender}</td>
+                            <td class="location">${person.location}</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" onclick="editRow('${person._id}')">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deletePerson('${person._id}')">Delete</button>
+                            </td>
+                        </tr>`;
+                    });
+                    document.getElementById('personTable').innerHTML = tableContent;
+                });
+        }
+        
+        function addPerson() {
+            const name = document.getElementById('name').value;
+            const gender = document.getElementById('gender').value;
+            const location = document.getElementById('location').value;
+            
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, gender, location })
+            }).then(() => fetchPersons());
+        }
+        
+        function deletePerson(id) {
+            
+            fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
+                .then(() => fetchPersons());
+        }
+
+        // Function to edit a person's details in the table
+        function editRow(id) {
+            const row = document.getElementById(`person-${id}`);
+            
+            // Get the current values from the row's text (existing data in the cells)
+            const name = row.querySelector(".name").innerText;
+            const gender = row.querySelector(".gender").innerText;
+            const location = row.querySelector(".location").innerText;
+            
+            // Replace the row's content with input fields to make it editable
+            row.querySelector(".name").innerHTML = `<input type="text" class="form-control" value="${name}">`;
+            row.querySelector(".gender").innerHTML = `<input type="text" class="form-control" value="${gender}">`;
+            row.querySelector(".location").innerHTML = `<input type="text" class="form-control" value="${location}">`;
+            
+            // Change the Edit button to Save and Cancel buttons
+            row.querySelector("td button").outerHTML = `
+                <button class="btn btn-success btn-sm" onclick="saveRow('${id}')">Save</button>
+                <button class="btn btn-danger btn-sm" onclick="cancelEdit('${id}')">Cancel</button>
+            `;
+        }
+        
+        // Function to save the updated data to the backend
+        function saveRow(id) {
+            const row = document.getElementById(`person-${id}`);
+            
+            // Get the new values from the input fields
+            const name = row.querySelector(".name input").value;
+            const gender = row.querySelector(".gender input").value;
+            const location = row.querySelector(".location input").value;
+            
+            // Send the updated data to the backend (PUT request)
+            fetch(`${apiUrl}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, gender, location })
+            }).then(() => fetchPersons());
+        }
+
+        // Function to cancel the editing and revert to original values
+        function cancelEdit(id) {
+            fetchPersons();  // Re-fetch persons to reset the table to its original state
+        }
+        
+        fetchPersons();  // Load persons when the page loads
+    </script>
+</body>
+</html>
